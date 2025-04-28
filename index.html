@@ -1,24 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Секундомеры</title>
+    <title>Исследование восприятия времени</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            margin-top: 50px;
+            margin-top: 20px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            text-align: left;
         }
         button {
             padding: 10px 20px;
             margin: 0 10px;
             font-size: 16px;
             cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
         }
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            background-color: #95a5a6;
         }
         .rez {
             display: block;
@@ -28,23 +52,94 @@
         }
         .timer-block {
             margin-bottom: 40px;
-            padding: 15px;
+            padding: 20px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
+            background-color: #f8f9fa;
         }
         .difference {
-            color: #d9534f;
+            margin-top: 10px;
+            font-size: 16px;
         }
         .difference.positive {
-            color: #5cb85c;
+            color: #e74c3c;
+        }
+        .difference.negative {
+            color: #2ecc71;
+        }
+        .difference.exact {
+            color: #f39c12;
+        }
+        #completeBtn {
+            background-color: #27ae60;
+            font-size: 18px;
+            padding: 12px 25px;
+            margin-top: 20px;
+        }
+        #completeBtn:hover {
+            background-color: #219653;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 600px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
 <body>
+    <h1>Исследование на тему «Восприятие времени»</h1>
     
+    <div class="instructions">
+        <p><strong>ЗАДАНИЕ:</strong> Вам будет предложено, не пользуясь часами и не считая про себя, определить конец заданного отрезка времени.</p>
+        <p>Нажмите «Старт» чтобы начать. Когда почувствуете, что время вышло - нажмите «Стоп».</p>
+    </div>
+    
+    <div class="timer-block" data-target="15">
+        <h2>15 секунд</h2>
+        <hr>
+        <button class="startBtn">Старт</button>
+        <button class="stopBtn" disabled>Стоп</button>
+        <span class="rez">Результат = </span>
+        <div class="difference"></div>
+    </div>
+
     <div class="timer-block" data-target="30">
         <h2>30 секунд</h2>
         <hr>
@@ -72,8 +167,46 @@
         <div class="difference"></div>
     </div>
 
+    <div class="timer-block" data-target="75">
+        <h2>75 секунд</h2>
+        <hr>
+        <button class="startBtn">Старт</button>
+        <button class="stopBtn" disabled>Стоп</button>
+        <span class="rez">Результат = </span>
+        <div class="difference"></div>
+    </div>
+
+    <button id="completeBtn" disabled>Завершить</button>
+
+    <div id="resultsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Результаты исследования</h2>
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Целевое время</th>
+                        <th>Ваш результат</th>
+                        <th>Разница</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <script>
-        document.querySelectorAll('.timer-block').forEach((timerBlock) => {
+        const timerBlocks = document.querySelectorAll('.timer-block');
+        const completeBtn = document.getElementById('completeBtn');
+        const modal = document.getElementById('resultsModal');
+        const closeBtn = document.querySelector('.close');
+        const resultsTable = document.getElementById('resultsTable').querySelector('tbody');
+        
+        let results = [];
+        let completedTests = 0;
+
+        timerBlocks.forEach((timerBlock) => {
             const startBtn = timerBlock.querySelector('.startBtn');
             const stopBtn = timerBlock.querySelector('.stopBtn');
             const result = timerBlock.querySelector('.rez');
@@ -87,6 +220,10 @@
             function updateButtons() {
                 stopBtn.disabled = !timerRunning;
                 startBtn.disabled = timerRunning || testCompleted;
+                
+                // Проверяем, все ли тесты завершены
+                completedTests = document.querySelectorAll('.timer-block .startBtn:disabled').length;
+                completeBtn.disabled = completedTests !== timerBlocks.length;
             }
             
             startBtn.addEventListener('click', function() {
@@ -107,17 +244,24 @@
                     
                     result.textContent = `Результат = ${elapsedTime} секунд`;
                     
+                    // Сохраняем результат
+                    results.push({
+                        target: targetTime,
+                        actual: elapsedTime,
+                        difference: timeDifference
+                    });
+                    
                     // Формируем строку с разницей
                     let differenceText = '';
                     if (timeDifference === 0) {
                         differenceText = `(точно!)`;
-                        difference.className = 'difference';
+                        difference.className = 'difference exact';
                     } else if (timeDifference > 0) {
                         differenceText = `(+${timeDifference} секунд)`;
-                        difference.className = 'difference';
+                        difference.className = 'difference positive';
                     } else {
                         differenceText = `(${timeDifference} секунд)`;
-                        difference.className = 'difference positive';
+                        difference.className = 'difference negative';
                     }
                     
                     difference.textContent = differenceText;
@@ -129,6 +273,53 @@
             });
             
             updateButtons();
+        });
+        
+        // Кнопка завершения
+        completeBtn.addEventListener('click', function() {
+            // Заполняем таблицу результатов
+            resultsTable.innerHTML = '';
+            results.forEach(res => {
+                const row = document.createElement('tr');
+                
+                const targetCell = document.createElement('td');
+                targetCell.textContent = `${res.target} сек`;
+                
+                const actualCell = document.createElement('td');
+                actualCell.textContent = `${res.actual} сек`;
+                
+                const diffCell = document.createElement('td');
+                if (res.difference === 0) {
+                    diffCell.textContent = 'точно!';
+                    diffCell.style.color = '#f39c12';
+                } else if (res.difference > 0) {
+                    diffCell.textContent = `+${res.difference} сек`;
+                    diffCell.style.color = '#e74c3c';
+                } else {
+                    diffCell.textContent = `${res.difference} сек`;
+                    diffCell.style.color = '#2ecc71';
+                }
+                
+                row.appendChild(targetCell);
+                row.appendChild(actualCell);
+                row.appendChild(diffCell);
+                
+                resultsTable.appendChild(row);
+            });
+            
+            // Показываем модальное окно
+            modal.style.display = 'block';
+        });
+        
+        // Закрытие модального окна
+        closeBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+        
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
         });
     </script>
 </body>
