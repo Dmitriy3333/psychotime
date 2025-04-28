@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Секундомеры</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .rez {
+            display: block;
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .timer-block {
+            margin-bottom: 40px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .difference {
+            color: #d9534f;
+        }
+        .difference.positive {
+            color: #5cb85c;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="timer-block" data-target="30">
+        <h2>30 секунд</h2>
+        <hr>
+        <button class="startBtn">Старт</button>
+        <button class="stopBtn" disabled>Стоп</button>
+        <span class="rez">Результат = </span>
+        <div class="difference"></div>
+    </div>
+
+    <div class="timer-block" data-target="45">
+        <h2>45 секунд</h2>
+        <hr>
+        <button class="startBtn">Старт</button>
+        <button class="stopBtn" disabled>Стоп</button>
+        <span class="rez">Результат = </span>
+        <div class="difference"></div>
+    </div>
+
+    <div class="timer-block" data-target="60">
+        <h2>60 секунд</h2>
+        <hr>
+        <button class="startBtn">Старт</button>
+        <button class="stopBtn" disabled>Стоп</button>
+        <span class="rez">Результат = </span>
+        <div class="difference"></div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.timer-block').forEach((timerBlock) => {
+            const startBtn = timerBlock.querySelector('.startBtn');
+            const stopBtn = timerBlock.querySelector('.stopBtn');
+            const result = timerBlock.querySelector('.rez');
+            const difference = timerBlock.querySelector('.difference');
+            const targetTime = parseInt(timerBlock.dataset.target);
+            
+            let startTime;
+            let timerRunning = false;
+            let testCompleted = false;
+            
+            function updateButtons() {
+                stopBtn.disabled = !timerRunning;
+                startBtn.disabled = timerRunning || testCompleted;
+            }
+            
+            startBtn.addEventListener('click', function() {
+                if (!timerRunning && !testCompleted) {
+                    startTime = new Date().getTime();
+                    timerRunning = true;
+                    result.textContent = 'Результат = ';
+                    difference.textContent = '';
+                    updateButtons();
+                }
+            });
+            
+            stopBtn.addEventListener('click', function() {
+                if (timerRunning && !testCompleted) {
+                    const endTime = new Date().getTime();
+                    const elapsedTime = Math.floor((endTime - startTime) / 1000);
+                    const timeDifference = elapsedTime - targetTime;
+                    
+                    result.textContent = `Результат = ${elapsedTime} секунд`;
+                    
+                    // Формируем строку с разницей
+                    let differenceText = '';
+                    if (timeDifference === 0) {
+                        differenceText = `(точно!)`;
+                        difference.className = 'difference';
+                    } else if (timeDifference > 0) {
+                        differenceText = `(+${timeDifference} секунд)`;
+                        difference.className = 'difference';
+                    } else {
+                        differenceText = `(${timeDifference} секунд)`;
+                        difference.className = 'difference positive';
+                    }
+                    
+                    difference.textContent = differenceText;
+                    
+                    timerRunning = false;
+                    testCompleted = true;
+                    updateButtons();
+                }
+            });
+            
+            updateButtons();
+        });
+    </script>
+</body>
+</html>
